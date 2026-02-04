@@ -1,0 +1,24 @@
+<div class="admin-box">
+    <h2>AI Vibe Checker</h2>
+    <textarea id="userInput" placeholder="Type a sentence..."></textarea>
+    <button onclick="checkVibe()" class="verify-link">Check Vibe</button>
+    
+    <div id="vibeResult" style="margin-top: 20px; font-weight: bold;"></div>
+</div>
+
+<script>
+async function checkVibe() {
+    const text = document.getElementById('userInput').value;
+    const resultDiv = document.getElementById('vibeResult');
+    
+    
+    const response = await fetch('https://your-app-name.onrender.com/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+    });
+
+    const data = await response.json();
+    resultDiv.innerHTML = `Vibe: ${data.vibe} (Score: ${data.score})`;
+}
+</script>
