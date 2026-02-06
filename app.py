@@ -25,7 +25,7 @@ def analyze():
         vibe = "Neutral"
         
     return jsonify({
-        'score': round(score, 2),
+        'score': round(score, 3),
         'vibe': vibe
     })
 
