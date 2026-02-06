@@ -145,7 +145,7 @@ async function checkVibe() {
         if (data.score < -0.1) color = "#f87171"; // Red for L
 
         resultDiv.style.color = color;
-        resultDiv.innerHTML = `Vibe: ${data.vibe} <span class="score-val">(${data.score})</span>`;
+        resultDiv.innerHTML = `Vibe: ${data.vibe} <span class="score-val">(${data.score*100})%</span>`;
         
     } catch (error) {
         resultDiv.innerHTML = "Error connecting to server.";
