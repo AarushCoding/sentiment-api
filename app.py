@@ -4,16 +4,21 @@ from textblob import TextBlob
 
 app = Flask(__name__)
 
-# Explicitly allow your frontend domain
-CORS(app, resources={r"/*": {"origins": ["https://sentiment.aarushnaik.co.uk", "https://aarushnaik.co.uk"]}})
+# Use "*" temporarily to rule out domain/subdomain typos
+# This allows the OPTIONS request to pass regardless of the origin
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
 def home():
     return "Sentiment API is Online. Please use the /analyze endpoint via POST."
-    
-@app.route('/analyze', methods=['POST'])
+
+# Add 'OPTIONS' to methods to handle preflight checks manually if needed
+@app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
-    # Adding a simple check to ensure JSON was actually sent
+    # Handle the Preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'No JSON data provided'}), 400
