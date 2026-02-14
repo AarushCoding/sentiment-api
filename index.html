@@ -9,8 +9,8 @@
             --bg: #0a0a0a; 
             --surface: #1a1a1a;
             --accent: #ffffff; 
-            --grey-text: #b0b0b0; /* Increased visibility from #888 */
-            --muted: #666666; /* Increased visibility from #444 */
+            --grey-text: #b0b0b0; 
+            --muted: #888888; /* Brightened from #666 */
             --pos: #4ade80;
             --neg: #f87171;
             --neu: #60a5fa;
@@ -26,8 +26,9 @@
         .container { width: 90%; max-width: 450px; padding: 20px; }
 
         h1 { 
-            font-weight: 200; letter-spacing: 6px; font-size: 11px; 
-            color: var(--muted); margin-bottom: 50px; text-align: center;
+            font-weight: 300; letter-spacing: 4px; font-size: 13px; 
+            color: var(--accent); /* Made the title much easier to read */
+            margin-bottom: 50px; text-align: center;
             text-transform: uppercase;
         }
         
@@ -53,7 +54,7 @@
         #status { 
             height: 20px; font-size: 10px; color: var(--grey-text); 
             margin-top: 20px; letter-spacing: 1.5px; text-align: center;
-            text-transform: uppercase; font-weight: 500;
+            text-transform: uppercase;
         }
 
         .result-box { 
@@ -73,15 +74,18 @@
             letter-spacing: -1px; transition: color 0.5s ease;
         }
 
-        /* The Math Bar */
+        /* The Animated Math Bar */
         .score-track {
             width: 100%; height: 2px; background: var(--surface);
-            margin: 20px 0; position: relative; border-radius: 2px;
+            margin: 30px 0; position: relative; border-radius: 2px;
         }
         #score-pointer {
-            position: absolute; width: 10px; height: 10px; 
-            background: white; border-radius: 50%; top: -4px;
-            left: 50%; transition: left 0.8s ease, background 0.5s ease;
+            position: absolute; width: 12px; height: 12px; 
+            background: white; border-radius: 50%; top: -5px;
+            left: 50%; 
+            /* This is the animation magic */
+            transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease;
+            transform: translateX(-50%); /* Keeps pointer centered on its position */
         }
 
         .stats { 
@@ -99,7 +103,7 @@
     <div class="container">
         <h1>Sentiment Engine v1.0</h1>
         
-        <textarea id="input" rows="1" placeholder="Type thoughts..." oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+        <textarea id="input" rows="1" placeholder="Enter text..." oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
         
         <button id="btn" onclick="checkVibe()">Run Analysis</button>
         
@@ -114,8 +118,8 @@
             </div>
 
             <div class="stats">
-                <span id="score">Score: -</span>
-                <span id="conf">Conf: -</span>
+                <span id="score">Polarity Score: -</span>
+                <span id="conf">Confidence: -</span>
                 <svg id="copyBtn" class="copy-icon" onclick="copyResult()" viewBox="0 0 24 24">
                     <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
                 </svg>
@@ -139,11 +143,13 @@
 
             btn.disabled = true;
             resBox.style.display = 'none';
-            status.innerText = "Connecting to Neural Network...";
+            // Reset pointer to center before each run
+            pointer.style.left = "50%"; 
+            status.innerText = "Processing Logic...";
 
             try {
                 await fetch(API_URL);
-                status.innerText = "Calculating Polarity...";
+                status.innerText = "Analyzing Vibe...";
 
                 const response = await fetch(`${API_URL}/analyze`, {
                     method: 'POST',
@@ -153,7 +159,6 @@
 
                 const data = await response.json();
                 
-                // Set Color and Content
                 vibeEl.innerText = data.vibe.toUpperCase();
                 let color = "var(--neu)";
                 if(data.vibe === "Positive") color = "var(--pos)";
@@ -162,19 +167,24 @@
                 vibeEl.style.color = color;
                 pointer.style.background = color;
 
-                // Move Math Pointer: Map -1 to 1 to 0% to 100%
+                // Move Math Pointer with animation
                 const position = ((data.score + 1) / 2) * 100;
-                pointer.style.left = `${position}%`;
                 
-                document.getElementById('score').innerText = `Score: ${data.score}`;
-                document.getElementById('conf').innerText = `Conf: ${data.confidence}`;
+                document.getElementById('score').innerText = `Polarity Score: ${data.score}`;
+                document.getElementById('conf').innerText = `Confidence: ${data.confidence}`;
                 
                 lastResult = `Vibe: ${data.vibe} | Score: ${data.score} | Confidence: ${data.confidence}`;
                 
                 status.innerText = "";
                 resBox.style.display = 'block';
+
+                // Slight timeout ensures the CSS transition triggers after the box appears
+                setTimeout(() => {
+                    pointer.style.left = `${position}%`;
+                }, 100);
+
             } catch (err) {
-                status.innerText = "System Offline";
+                status.innerText = "Connection Failed";
             } finally {
                 btn.disabled = false;
             }
