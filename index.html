@@ -3,296 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Sentiment Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Vibe Check</title>
     <style>
-        :root {
-            --primary: #f59e0b;
-            --bg: #0f172a;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
-            --pos: #4ade80;
-            --neg: #f87171;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top left, #451a03, var(--bg));
-            background-color: var(--bg);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding: 40px 20px;
-        }
-
-        .dashboard {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        h2 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-top: 0;
-            background: linear-gradient(to right, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        textarea, input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: white;
-            font-family: inherit;
-            font-size: 1rem;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-
-        textarea { height: 80px; resize: none; }
-
-        textarea:focus, input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        button:hover:not(:disabled) {
-            background: #fbbf24;
-            transform: translateY(-2px);
-        }
-
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* Results Styling */
-        .tally-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .tally-item {
-            padding: 15px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-        }
-
-        .tally-num { font-size: 1.5rem; font-weight: 800; display: block; }
-
-        .review-list {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 600px) { .review-list { grid-template-columns: 1fr; } }
-
-        .review-card {
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            border-left: 4px solid var(--primary);
-        }
-
-        .review-card.pos { border-color: var(--pos); }
-        .review-card.neg { border-color: var(--neg); }
-
-        .score-pill {
-            float: right;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .loader {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #000;
-            border-bottom-color: transparent;
-            border-radius: 50%;
-            display: inline-block;
-            animation: rotation 1s linear infinite;
-        }
-
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { width: 90%; max-width: 400px; text-align: center; }
+        h1 { font-weight: 200; letter-spacing: 2px; margin-bottom: 30px; }
+        textarea { width: 100%; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 15px; box-sizing: border-box; font-size: 16px; margin-bottom: 20px; outline: none; }
+        button { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; width: 100%; }
+        button:disabled { background: #333; color: #777; cursor: not-allowed; }
+        #status { margin-top: 20px; font-size: 14px; color: #888; min-height: 20px; }
+        .result-box { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; display: none; }
+        .score { font-size: 32px; font-weight: bold; margin: 10px 0; }
+        .meta { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-
-<div class="dashboard">
     <div class="card">
-        <h2>Quick Vibe Check</h2>
-        <div class="input-group">
-            <textarea id="userInput" placeholder="Paste a single review or thought..."></textarea>
-            <button id="vibeBtn" onclick="checkVibe()">
-                <span id="vibeBtnText">Check Vibe</span>
-            </button>
+        <h1>VIBE CHECK</h1>
+        <textarea id="input" placeholder="Type something..."></textarea>
+        <button id="btn" onclick="checkVibe()">ANALYZE</button>
+        <div id="status"></div>
+
+        <div id="resultBox" class="result-box">
+            <div class="meta">Analysis Result</div>
+            <div id="vibe" class="score">-</div>
+            <div id="conf" style="color: #888;">Confidence: -</div>
         </div>
-        <div id="vibeResult" style="text-align:center; font-weight:700; min-height: 24px;"></div>
     </div>
 
-    <div class="card">
-        <h2>Amazon Review Scraper</h2>
-        <div class="input-group">
-            <input type="text" id="amazonUrl" placeholder="Paste Amazon.co.uk product URL...">
-            <button id="scrapeBtn" onclick="analyzeAmazon()">
-                <span id="scrapeBtnText">Scrape & Analyze</span>
-            </button>
-        </div>
+    <script>
+        const API_URL = "https://sentiment-api.aarushnaik.co.uk"; 
 
-        <div id="amazonDisplay" style="display: none;">
-            <div class="tally-grid">
-                <div class="tally-item"><span id="totalTally" class="tally-num">0</span>Total</div>
-                <div class="tally-item" style="color: var(--pos);"><span id="posTally" class="tally-num">0</span>Pos</div>
-                <div class="tally-item" style="color: var(--neg);"><span id="negTally" class="tally-num">0</span>Neg</div>
-            </div>
+        async function checkVibe() {
+            const text = document.getElementById('input').value;
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            const resBox = document.getElementById('resultBox');
 
-            <div class="review-list">
-                <div>
-                    <h4 style="color: var(--pos);">Top 5 Positive</h4>
-                    <div id="posReviews"></div>
-                </div>
-                <div>
-                    <h4 style="color: var(--neg);">Top 5 Negative</h4>
-                    <div id="negReviews"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+            if (!text) return;
 
-<script>
-    const API_BASE = 'https://sentiment-api.aarushnaik.co.uk';
+            btn.disabled = true;
+            resBox.style.display = 'none';
+            status.innerText = "WAKING THE MODEL UP...";
 
-    function setLoading(btnId, isLoading) {
-        const btn = document.getElementById(btnId);
-        const text = document.getElementById(btnId + 'Text');
-        btn.disabled = isLoading;
-        if (isLoading) {
-            text.innerHTML = '<span class="loader"></span> Processing...';
-        } else {
-            text.innerText = btnId === 'vibeBtn' ? 'Check Vibe' : 'Scrape & Analyze';
+            try {
+                // First, wake the server
+                await fetch(API_URL);
+                status.innerText = "CHECKING...";
+
+                const res = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await res.json();
+                
+                document.getElementById('vibe').innerText = data.vibe;
+                document.getElementById('conf').innerText = `Confidence: ${data.confidence}`;
+                
+                status.innerText = "";
+                resBox.style.display = 'block';
+            } catch (e) {
+                status.innerText = "CONNECTION ERROR";
+            } finally {
+                btn.disabled = false;
+            }
         }
-    }
-
-    async function checkVibe() {
-        const text = document.getElementById('userInput').value;
-        const resultDiv = document.getElementById('vibeResult');
-        if (!text.trim()) return;
-
-        setLoading('vibeBtn', true);
-        try {
-            const response = await fetch(`${API_BASE}/analyze`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-            const data = await response.json();
-            
-            let color = "#fbbf24";
-            if (data.score > 0.1) color = "#4ade80";
-            if (data.score < -0.1) color = "#f87171";
-
-            resultDiv.style.color = color;
-            resultDiv.innerHTML = `Vibe: ${data.vibe} (${(data.score * 100).toFixed(1)}%)`;
-        } catch (e) {
-            resultDiv.innerHTML = "Error connecting to server.";
-        } finally {
-            setLoading('vibeBtn', false);
-        }
-    }
-
-    async function analyzeAmazon() {
-        const url = document.getElementById('amazonUrl').value;
-        const display = document.getElementById('amazonDisplay');
-        if (!url.trim()) return;
-
-        setLoading('scrapeBtn', true);
-        display.style.display = 'none';
-
-        try {
-            const response = await fetch(`${API_BASE}/analyze-amazon`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            const data = await response.json();
-
-            if (data.error) throw new Error(data.error);
-
-            // Update Tally
-            document.getElementById('totalTally').innerText = data.tally.total;
-            document.getElementById('posTally').innerText = data.tally.positive;
-            document.getElementById('negTally').innerText = data.tally.negative;
-
-            // Update Lists
-            const renderReview = (r, type) => `
-                <div class="review-card ${type}">
-                    <span class="score-pill">${(r.score * 100).toFixed(0)}%</span>
-                    ${r.text}
-                </div><br>
-            `;
-
-            document.getElementById('posReviews').innerHTML = data.top_positive.map(r => renderReview(r, 'pos')).join('');
-            document.getElementById('negReviews').innerHTML = data.top_negative.map(r => renderReview(r, 'neg')).join('');
-
-            display.style.display = 'block';
-        } catch (e) {
-            alert(e.message || "Failed to scrape reviews. Amazon may be blocking the request.");
-        } finally {
-            setLoading('scrapeBtn', false);
-        }
-    }
-</script>
-
+    </script>
 </body>
 </html>
