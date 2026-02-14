@@ -10,7 +10,8 @@
             --surface: #1a1a1a;
             --accent: #ffffff; 
             --grey-text: #b0b0b0; 
-            --muted: #888888; /* Brightened from #666 */
+            --muted: #888888;
+            --orange: #ff9500; /* The hint of orange */
             --pos: #4ade80;
             --neg: #f87171;
             --neu: #60a5fa;
@@ -23,24 +24,37 @@
             height: 100vh; margin: 0; overflow: hidden;
         }
 
-        .container { width: 90%; max-width: 450px; padding: 20px; }
+        .container { width: 90%; max-width: 450px; padding: 20px; position: relative; }
 
         h1 { 
             font-weight: 300; letter-spacing: 4px; font-size: 13px; 
-            color: var(--accent); /* Made the title much easier to read */
-            margin-bottom: 50px; text-align: center;
+            color: var(--accent); margin-bottom: 50px; text-align: center;
             text-transform: uppercase;
         }
         
+        .input-container { position: relative; width: 100%; }
+
         textarea {
             width: 100%; background: transparent; border: none;
             border-bottom: 1px solid var(--surface); color: var(--accent);
             padding: 12px 0; font-size: 20px; outline: none;
-            resize: none; transition: 0.4s; margin-bottom: 25px;
+            resize: none; transition: 0.4s; margin-bottom: 5px;
             font-family: inherit;
         }
-        textarea:focus { border-bottom: 1px solid var(--accent); }
-        
+        textarea:focus { border-bottom: 1px solid var(--orange); } /* Orange hint on focus */
+
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 25px; }
+
+        #char-count { font-size: 10px; letter-spacing: 1px; color: var(--muted); transition: 0.3s; }
+        #char-count.warning { color: var(--orange); font-weight: bold; }
+
+        .reset-link { 
+            font-size: 10px; letter-spacing: 1px; color: var(--muted); 
+            cursor: pointer; text-transform: uppercase; transition: 0.3s;
+            background: none; border: none; padding: 0;
+        }
+        .reset-link:hover { color: var(--orange); }
+
         button { 
             background: transparent; color: var(--accent); 
             border: 1px solid var(--muted); padding: 14px; 
@@ -48,7 +62,7 @@
             font-size: 10px; letter-spacing: 3px; font-weight: 600;
             text-transform: uppercase; transition: 0.3s;
         }
-        button:hover { border-color: var(--accent); background: var(--accent); color: var(--bg); }
+        button:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
         button:disabled { opacity: 0.2; cursor: not-allowed; }
 
         #status { 
@@ -74,7 +88,6 @@
             letter-spacing: -1px; transition: color 0.5s ease;
         }
 
-        /* The Animated Math Bar */
         .score-track {
             width: 100%; height: 2px; background: var(--surface);
             margin: 30px 0; position: relative; border-radius: 2px;
@@ -82,10 +95,8 @@
         #score-pointer {
             position: absolute; width: 12px; height: 12px; 
             background: white; border-radius: 50%; top: -5px;
-            left: 50%; 
-            /* This is the animation magic */
-            transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease;
-            transform: translateX(-50%); /* Keeps pointer centered on its position */
+            left: 50%; transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease;
+            transform: translateX(-50%);
         }
 
         .stats { 
@@ -95,7 +106,7 @@
         }
         
         .copy-icon { cursor: pointer; width: 16px; height: 16px; fill: var(--muted); transition: 0.2s; }
-        .copy-icon:hover { fill: var(--accent); }
+        .copy-icon:hover { fill: var(--orange); }
     </style>
 </head>
 <body>
@@ -103,7 +114,13 @@
     <div class="container">
         <h1>Sentiment Engine v1.0</h1>
         
-        <textarea id="input" rows="1" placeholder="Enter text..." oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+        <div class="input-container">
+            <textarea id="input" rows="1" placeholder="Enter text..." maxlength="500" oninput="updateUI()"></textarea>
+            <div class="meta-row">
+                <span id="char-count">0 / 500</span>
+                <button class="reset-link" onclick="resetApp()">[ Reset ]</button>
+            </div>
+        </div>
         
         <button id="btn" onclick="checkVibe()">Run Analysis</button>
         
@@ -131,6 +148,29 @@
         const API_URL = "https://sentiment-api.aarushnaik.co.uk";
         let lastResult = "";
 
+        function updateUI() {
+            const input = document.getElementById('input');
+            const count = document.getElementById('char-count');
+            
+            // Auto-resize
+            input.style.height = '';
+            input.style.height = input.scrollHeight + 'px';
+            
+            // Update counter
+            const len = input.value.length;
+            count.innerText = `${len} / 500`;
+            
+            if (len >= 450) count.classList.add('warning');
+            else count.classList.remove('warning');
+        }
+
+        function resetApp() {
+            document.getElementById('input').value = "";
+            document.getElementById('resultBox').style.display = 'none';
+            document.getElementById('status').innerText = "";
+            updateUI();
+        }
+
         async function checkVibe() {
             const text = document.getElementById('input').value;
             const btn = document.getElementById('btn');
@@ -143,14 +183,11 @@
 
             btn.disabled = true;
             resBox.style.display = 'none';
-            // Reset pointer to center before each run
             pointer.style.left = "50%"; 
-            status.innerText = "Processing Logic...";
+            status.innerText = "Analyzing Patterns...";
 
             try {
                 await fetch(API_URL);
-                status.innerText = "Analyzing Vibe...";
-
                 const response = await fetch(`${API_URL}/analyze`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -167,9 +204,7 @@
                 vibeEl.style.color = color;
                 pointer.style.background = color;
 
-                // Move Math Pointer with animation
                 const position = ((data.score + 1) / 2) * 100;
-                
                 document.getElementById('score').innerText = `Polarity Score: ${data.score}`;
                 document.getElementById('conf').innerText = `Confidence: ${data.confidence}`;
                 
@@ -178,10 +213,7 @@
                 status.innerText = "";
                 resBox.style.display = 'block';
 
-                // Slight timeout ensures the CSS transition triggers after the box appears
-                setTimeout(() => {
-                    pointer.style.left = `${position}%`;
-                }, 100);
+                setTimeout(() => { pointer.style.left = `${position}%`; }, 100);
 
             } catch (err) {
                 status.innerText = "Connection Failed";
@@ -193,8 +225,8 @@
         function copyResult() {
             navigator.clipboard.writeText(lastResult);
             const icon = document.getElementById('copyBtn');
-            icon.style.fill = "#ffffff";
-            setTimeout(() => icon.style.fill = "#666", 1000);
+            icon.style.fill = "var(--orange)";
+            setTimeout(() => icon.style.fill = "var(--muted)", 1000);
         }
     </script>
 </body>
