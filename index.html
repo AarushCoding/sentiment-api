@@ -3,55 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Vibe Checker</title>
+    <title>AI Sentiment Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
     <style>
         :root {
-            --primary: #f59e0b; /* Bright Orange/Amber */
+            --primary: #f59e0b;
             --bg: #0f172a;
             --glass: rgba(255, 255, 255, 0.03);
             --border: rgba(255, 255, 255, 0.1);
+            --pos: #4ade80;
+            --neg: #f87171;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            /* Deep orange-tinted background glow */
             background: radial-gradient(circle at top left, #451a03, var(--bg));
             background-color: var(--bg);
             color: white;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
+            padding: 40px 20px;
         }
 
-        .admin-box {
+        .dashboard {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
             background: var(--glass);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 40px;
-            width: 90%;
-            max-width: 450px;
+            padding: 30px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
         }
 
         h2 {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             margin-top: 0;
             background: linear-gradient(to right, #fbbf24, #f59e0b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
         }
 
-        textarea {
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        textarea, input[type="text"] {
             width: 100%;
-            height: 100px;
             padding: 16px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
@@ -59,13 +72,13 @@
             color: white;
             font-family: inherit;
             font-size: 1rem;
-            margin: 20px 0;
             box-sizing: border-box;
-            resize: none;
             transition: all 0.3s ease;
         }
 
-        textarea:focus {
+        textarea { height: 80px; resize: none; }
+
+        textarea:focus, input:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
@@ -73,88 +86,212 @@
 
         button {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             background: var(--primary);
-            color: #000; /* Black text pops on orange */
+            color: #000;
             border: none;
             border-radius: 12px;
             font-weight: 700;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background: #fbbf24;
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
         }
 
-        #vibeResult {
-            margin-top: 30px;
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Results Styling */
+        .tally-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .tally-item {
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+
+        .tally-num { font-size: 1.5rem; font-weight: 800; display: block; }
+
+        .review-list {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) { .review-list { grid-template-columns: 1fr; } }
+
+        .review-card {
+            background: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            font-size: 1.1rem;
-            min-height: 24px;
-            font-weight: 600;
+            font-size: 0.85rem;
+            border-left: 4px solid var(--primary);
         }
 
-        .score-val {
-            color: var(--primary);
+        .review-card.pos { border-color: var(--pos); }
+        .review-card.neg { border-color: var(--neg); }
+
+        .score-pill {
+            float: right;
             font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
         }
+
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #000;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="admin-box">
-    <h2>AI Vibe Checker</h2>
-    <textarea id="userInput" placeholder="What's the vibe? Type a sentence..."></textarea>
-    <button id="vibeBtn" onclick="checkVibe()">Check Vibe</button>
-    
-    <div id="vibeResult">Waiting for input...</div>
+<div class="dashboard">
+    <div class="card">
+        <h2>Quick Vibe Check</h2>
+        <div class="input-group">
+            <textarea id="userInput" placeholder="Paste a single review or thought..."></textarea>
+            <button id="vibeBtn" onclick="checkVibe()">
+                <span id="vibeBtnText">Check Vibe</span>
+            </button>
+        </div>
+        <div id="vibeResult" style="text-align:center; font-weight:700; min-height: 24px;"></div>
+    </div>
+
+    <div class="card">
+        <h2>Amazon Review Scraper</h2>
+        <div class="input-group">
+            <input type="text" id="amazonUrl" placeholder="Paste Amazon.co.uk product URL...">
+            <button id="scrapeBtn" onclick="analyzeAmazon()">
+                <span id="scrapeBtnText">Scrape & Analyze</span>
+            </button>
+        </div>
+
+        <div id="amazonDisplay" style="display: none;">
+            <div class="tally-grid">
+                <div class="tally-item"><span id="totalTally" class="tally-num">0</span>Total</div>
+                <div class="tally-item" style="color: var(--pos);"><span id="posTally" class="tally-num">0</span>Pos</div>
+                <div class="tally-item" style="color: var(--neg);"><span id="negTally" class="tally-num">0</span>Neg</div>
+            </div>
+
+            <div class="review-list">
+                <div>
+                    <h4 style="color: var(--pos);">Top 5 Positive</h4>
+                    <div id="posReviews"></div>
+                </div>
+                <div>
+                    <h4 style="color: var(--neg);">Top 5 Negative</h4>
+                    <div id="negReviews"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-async function checkVibe() {
-    const text = document.getElementById('userInput').value;
-    const resultDiv = document.getElementById('vibeResult');
-    const btn = document.getElementById('vibeBtn');
-    
-    if (!text.trim()) {
-        resultDiv.innerHTML = "Please type something first!";
-        return;
+    const API_BASE = 'https://sentiment-api.aarushnaik.co.uk';
+
+    function setLoading(btnId, isLoading) {
+        const btn = document.getElementById(btnId);
+        const text = document.getElementById(btnId + 'Text');
+        btn.disabled = isLoading;
+        if (isLoading) {
+            text.innerHTML = '<span class="loader"></span> Processing...';
+        } else {
+            text.innerText = btnId === 'vibeBtn' ? 'Check Vibe' : 'Scrape & Analyze';
+        }
     }
 
-    btn.innerText = "Checking...";
-    btn.disabled = true;
+    async function checkVibe() {
+        const text = document.getElementById('userInput').value;
+        const resultDiv = document.getElementById('vibeResult');
+        if (!text.trim()) return;
 
-    try {
-        const response = await fetch('https://sentiment-api.aarushnaik.co.uk/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text })
-        });
+        setLoading('vibeBtn', true);
+        try {
+            const response = await fetch(`${API_BASE}/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            
+            let color = "#fbbf24";
+            if (data.score > 0.1) color = "#4ade80";
+            if (data.score < -0.1) color = "#f87171";
 
-        const data = await response.json();
-        
-        // Match the text color to the vibe
-        let color = "#fbbf24"; // Default Orange
-        if (data.score > 0.1) color = "#4ade80"; // Green for W
-        if (data.score < -0.1) color = "#f87171"; // Red for L
-
-        resultDiv.style.color = color;
-        resultDiv.innerHTML = `Vibe: ${data.vibe} <span class="score-val">(${data.score*100})%</span>`;
-        
-    } catch (error) {
-        resultDiv.innerHTML = "Error connecting to server.";
-        console.error(error);
-    } finally {
-        btn.innerText = "Check Vibe";
-        btn.disabled = false;
+            resultDiv.style.color = color;
+            resultDiv.innerHTML = `Vibe: ${data.vibe} (${(data.score * 100).toFixed(1)}%)`;
+        } catch (e) {
+            resultDiv.innerHTML = "Error connecting to server.";
+        } finally {
+            setLoading('vibeBtn', false);
+        }
     }
-}
+
+    async function analyzeAmazon() {
+        const url = document.getElementById('amazonUrl').value;
+        const display = document.getElementById('amazonDisplay');
+        if (!url.trim()) return;
+
+        setLoading('scrapeBtn', true);
+        display.style.display = 'none';
+
+        try {
+            const response = await fetch(`${API_BASE}/analyze-amazon`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            // Update Tally
+            document.getElementById('totalTally').innerText = data.tally.total;
+            document.getElementById('posTally').innerText = data.tally.positive;
+            document.getElementById('negTally').innerText = data.tally.negative;
+
+            // Update Lists
+            const renderReview = (r, type) => `
+                <div class="review-card ${type}">
+                    <span class="score-pill">${(r.score * 100).toFixed(0)}%</span>
+                    ${r.text}
+                </div><br>
+            `;
+
+            document.getElementById('posReviews').innerHTML = data.top_positive.map(r => renderReview(r, 'pos')).join('');
+            document.getElementById('negReviews').innerHTML = data.top_negative.map(r => renderReview(r, 'neg')).join('');
+
+            display.style.display = 'block';
+        } catch (e) {
+            alert(e.message || "Failed to scrape reviews. Amazon may be blocking the request.");
+        } finally {
+            setLoading('scrapeBtn', false);
+        }
+    }
 </script>
 
 </body>
