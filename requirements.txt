@@ -1,4 +1,6 @@
 flask
 flask-cors
 textblob
+requests
+beautifulsoup4
 gunicorn
