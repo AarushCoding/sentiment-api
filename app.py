@@ -3,7 +3,9 @@ from flask_cors import CORS
 from textblob import TextBlob
 
 app = Flask(__name__)
-CORS(app)
+
+# Explicitly allow your frontend domain
+CORS(app, resources={r"/*": {"origins": ["https://sentiment.aarushnaik.co.uk", "https://aarushnaik.co.uk"]}})
 
 @app.route('/')
 def home():
@@ -11,9 +13,12 @@ def home():
     
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    data = request.json
+    # Adding a simple check to ensure JSON was actually sent
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'No JSON data provided'}), 400
+        
     text = data.get('text', '')
-    
     blob = TextBlob(text)
     score = blob.sentiment.polarity
     
