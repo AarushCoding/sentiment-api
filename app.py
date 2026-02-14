@@ -1,14 +1,23 @@
+import os
+import time
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from textblob import TextBlob
-import requests
 from bs4 import BeautifulSoup
-import time
+import nltk
 
+# 1. Initialize Flask and CORS
 app = Flask(__name__)
-
-# robust CORS configuration
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# 2. Ensure NLTK data is available for TextBlob
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('brown')
+    nltk.download('punkt_tab')
 
 @app.after_request
 def add_headers(response):
@@ -17,62 +26,43 @@ def add_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
+# 3. Amazon Scraper Logic
 def scrape_amazon_reviews(url):
-    # Convert standard product link to the dedicated reviews page
     if "/dp/" in url:
         try:
-            parts = url.split("/dp/")[1].split("/")
-            asin = parts[0].split("?")[0]
+            asin = url.split("/dp/")[1].split("/")[0].split("?")[0]
             url = f"https://www.amazon.co.uk/product-reviews/{asin}/?reviewerType=all_reviews"
         except:
             pass
 
     session = requests.Session()
-    
-    # Precise headers to mimic a high-end desktop browser
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-GB,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": "https://www.google.com/",
-        "DNT": "1",
-        "Connection": "keep-alive"
+        "Referer": "https://www.google.com/"
     }
 
     try:
-        # Hit the homepage first to establish a session/cookie context
-        session.get("https://www.amazon.co.uk", headers=headers, timeout=5)
-        
-        # Small delay to mimic human behavior
-        time.sleep(1)
-        
         response = session.get(url, headers=headers, timeout=10)
-        
-        if response.status_code != 200:
-            return None
-
-        # Check if the page is a "Sorry, we're just checking you're a human" CAPTCHA page
-        if "api-services-support@amazon.com" in response.text or "captcha" in response.text.lower():
-            print("Amazon triggered a CAPTCHA challenge.")
+        if response.status_code != 200 or "captcha" in response.text.lower():
             return None
 
         soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Selectors for the review text
         review_elements = soup.select('.review-text-content span, [data-hook="review-body"] span')
-        
-        # Filter out very short strings (like "Read more")
         reviews = [rev.get_text(strip=True) for rev in review_elements if len(rev.get_text()) > 15]
-        
         return reviews if reviews else None
     except Exception as e:
-        print(f"Error during scrape: {e}")
+        print(f"Scrape error: {e}")
         return None
 
+# 4. Routes
 @app.route('/')
 def home():
-    return jsonify({"status": "API Online", "endpoints": ["/analyze", "/analyze-amazon"]})
+    return jsonify({
+        "status": "API Online", 
+        "owner": "Aarush Naik",
+        "endpoints": ["/analyze", "/analyze-amazon"]
+    })
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -87,10 +77,7 @@ def analyze():
     if score > 0.1: vibe = "Positive"
     elif score < -0.1: vibe = "Negative"
     
-    return jsonify({
-        'score': round(score, 3),
-        'vibe': vibe
-    })
+    return jsonify({'score': round(score, 3), 'vibe': vibe})
 
 @app.route('/analyze-amazon', methods=['POST'])
 def analyze_amazon():
@@ -98,35 +85,26 @@ def analyze_amazon():
     if not data or 'url' not in data:
         return jsonify({'error': 'No URL provided'}), 400
     
-    url = data.get('url', '')
-    reviews = scrape_amazon_reviews(url)
-    
+    reviews = scrape_amazon_reviews(data['url'])
     if not reviews:
-        return jsonify({'error': 'Amazon blocked the request or the link is invalid.'}), 503
+        return jsonify({'error': 'Amazon blocked or no reviews found'}), 503
 
     processed = []
     for text in reviews:
         score = TextBlob(text).sentiment.polarity
         processed.append({
-            'text': text[:250] + "..." if len(text) > 250 else text,
+            'text': text[:200] + "..." if len(text) > 200 else text,
             'score': round(score, 3)
         })
 
-    # Sort results by score (descending)
-    sorted_results = sorted(processed, key=lambda x: x['score'], reverse=True)
-    
-    pos_tally = len([r for r in processed if r['score'] > 0.1])
-    neg_tally = len([r for r in processed if r['score'] < -0.1])
-
     return jsonify({
-        'tally': {
-            'positive': pos_tally,
-            'negative': neg_tally,
-            'total': len(processed)
-        },
-        'top_positive': sorted_results[:5],
-        'top_negative': sorted_results[-5:][::-1]
+        'total_reviews': len(processed),
+        'results': sorted(processed, key=lambda x: x['score'], reverse=True)
     })
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# 5. THE CRITICAL FIX FOR RENDER
+if __name__ == "__main__":
+    # Render sets a PORT environment variable. We MUST use it.
+    port = int(os.environ.get("PORT", 10000))
+    # Using 0.0.0.0 is mandatory to allow external traffic
+    app.run(host='0.0.0.0', port=port)
